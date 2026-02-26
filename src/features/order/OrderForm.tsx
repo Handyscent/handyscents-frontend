@@ -11,6 +11,14 @@ import {
 
 const URL_REGEX = /^https?:\/\/.+\..+/
 
+/** Auto-rename file to ORDER{orderNum}_Image{n}.{ext} for upload */
+function renameOrderImage(orderNumber: string, imageIndex: number, file: File): File {
+  const orderNum = orderNumber.trim().replace(/^#/, '').replace(/\s/g, '') || 'ORDER'
+  const ext = file.name.split('.').pop()?.toLowerCase() || (file.type === 'image/png' ? 'png' : 'jpg')
+  const name = `ORDER${orderNum}_Image${imageIndex}.${ext}`
+  return new File([file], name, { type: file.type })
+}
+
 function getImageDimensions(file: File): Promise<{ width: number; height: number }> {
   return new Promise((resolve, reject) => {
     const img = new Image()
@@ -135,8 +143,12 @@ export function OrderForm() {
       setShowValidationModal(true)
       return
     }
-    // TODO: API submit
-    console.log('Submit', form)
+    const renamedImages = form.images
+      .filter((f): f is File => f != null)
+      .map((file, i) => renameOrderImage(form.orderNumber, i + 1, file))
+    const payload = { ...form, images: renamedImages }
+    // TODO: API submit with payload (files named ORDER1234_Image1.jpg etc.)
+    console.log('Submit', payload)
   }
 
   const errorList = getErrorList(errors)
