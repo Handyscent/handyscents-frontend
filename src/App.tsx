@@ -1,7 +1,12 @@
-import { OrderForm } from './features/order/OrderForm'
+import { BrowserRouter } from 'react-router-dom'
+import { AppRoutes } from './routing/routes'
 
 function App() {
-  return <OrderForm />
+  return (
+    <BrowserRouter>
+      <AppRoutes />
+    </BrowserRouter>
+  )
 }
 
 export default App

@@ -36,3 +36,13 @@ export interface OrderFormErrors {
   message?: string
   images?: (string | undefined)[]
 }
+
+export interface ResubmissionFormData {
+  orderId: string
+  images: (File | null)[]
+}
+
+export interface ResubmissionFormErrors {
+  orderId?: string
+  images?: (string | undefined)[]
+}
