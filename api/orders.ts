@@ -7,7 +7,7 @@ export const config = {
   api: { bodyParser: false },
 }
 
-const APPSCRIPT_URL = process.env.APPSCRIPT_WEBAPP_URL || process.env.APPSCRIPT_URL || '';
+const APPSCRIPT_URL = process.env.APPSCRIPT_WEBAPP_URL;
 const APPSCRIPT_SECRET = process.env.APPSCRIPT_SECRET;
 
 interface ParsedFile {
