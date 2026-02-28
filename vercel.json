@@ -1,0 +1,11 @@
+{
+  "buildCommand": "npm run build",
+  "outputDirectory": "dist",
+  "rewrites": [{ "source": "/((?!api).*)", "destination": "/index.html" }],
+  "functions": {
+    "api/orders.ts": {
+      "memory": 2048,
+      "maxDuration": 60
+    }
+  }
+}
