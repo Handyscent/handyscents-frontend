@@ -59,9 +59,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return
   }
   if (!APPSCRIPT_URL) {
+    const raw = (process.env.APPSCRIPT_WEBAPP_URL ?? process.env.APPSCRIPT_URL ?? '').trim()
     res.status(500).json({
       error:
         'Server misconfigured: set APPSCRIPT_WEBAPP_URL in Vercel (Settings → Environment Variables), then redeploy.',
+      debug: {
+        appscriptWebappUrlSet: !!process.env.APPSCRIPT_WEBAPP_URL,
+        appscriptUrlSet: !!process.env.APPSCRIPT_URL,
+        rawLength: raw.length,
+      },
     })
     return
   }
