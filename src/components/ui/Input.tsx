@@ -18,7 +18,7 @@ export function Input({
 }: InputProps) {
   const inputId = id ?? label.replace(/\s+/g, '-').toLowerCase()
   const baseClass =
-    'w-full rounded-lg border bg-white px-3 py-2.5 text-base sm:text-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-1 sm:py-2.5 min-h-[44px] sm:min-h-0'
+    'w-full rounded-lg border bg-white disabled:bg-gray-100 disabled:text-gray-500 disabled:cursor-not-allowed px-3 py-2.5 text-base sm:text-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-1 sm:py-2.5 min-h-[44px] sm:min-h-0'
   const borderClass = error ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : 'border-gray-200 focus:border-violet-500 focus:ring-violet-500'
 
   if (multiline) {

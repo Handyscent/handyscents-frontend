@@ -1,4 +1,5 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { Input } from '../../components/ui/Input'
 import { FileUpload } from '../../components/ui/FileUpload'
 import type { OrderFormData, OrderFormErrors } from '../../models/order.types'
@@ -12,6 +13,7 @@ import {
   renameOrderImage,
   validateSingleImage,
 } from '../../shared/utils/orderFormUtils'
+import { getQrCodeImageUrl } from '../../shared/utils/convertLinkQR'
 
 const URL_REGEX = /^https?:\/\/.+\..+/
 
@@ -71,19 +73,35 @@ function getErrorList(errors: OrderFormErrors): { field: string; message: string
 }
 
 export function OrderForm() {
+  const [searchParams] = useSearchParams()
   const [errors, setErrors] = useState<OrderFormErrors>({})
   const [showValidationModal, setShowValidationModal] = useState(false)
   const [uploadError, setUploadError] = useState<{ field: string; message: string } | null>(null)
   const [uploadKeys, setUploadKeys] = useState<Record<number, number>>({})
-  const [form, setForm] = useState<OrderFormData>({
-    ...ORDER_FORM_DEFAULTS,
-    orderNumber: '#1005',
-    creatorName: 'April Fadel Tyra Ratke-Cronin',
-    quantityOrdered: '100',
-    submittedUrl: '',
-    orderConfirmationLink: 'https://invitational-test-app.myshopify.com/64',
-    message: '',
-  })
+  const [form, setForm] = useState<OrderFormData>(ORDER_FORM_DEFAULTS)
+
+  useEffect(() => {
+    const prefill: Partial<OrderFormData> = {}
+
+    const orderNumber = searchParams.get('orderNumber') ?? searchParams.get('orderId')
+    const creatorName = searchParams.get('creatorName') ?? searchParams.get('creatorFullName')
+    const quantityOrdered = searchParams.get('quantityOrdered') ?? searchParams.get('totalItemsInOrder')
+    const submittedUrl = searchParams.get('submittedUrl')
+    const orderConfirmationLink =
+      searchParams.get('orderConfirmationLink') ?? searchParams.get('orderStatusUrl')
+    const message = searchParams.get('message')
+
+    if (orderNumber) prefill.orderNumber = orderNumber
+    if (creatorName) prefill.creatorName = creatorName
+    if (quantityOrdered) prefill.quantityOrdered = quantityOrdered
+    if (submittedUrl) prefill.submittedUrl = submittedUrl
+    if (orderConfirmationLink) prefill.orderConfirmationLink = orderConfirmationLink
+    if (message) prefill.message = message
+
+    if (Object.keys(prefill).length > 0) {
+      setForm((p) => ({ ...p, ...prefill }))
+    }
+  }, [searchParams])
 
   const update = <K extends keyof OrderFormData>(key: K, value: OrderFormData[K]) => {
     setForm((prev) => ({ ...prev, [key]: value }))
@@ -108,9 +126,43 @@ export function OrderForm() {
     const renamedImages = form.images
       .filter((f): f is File => f != null)
       .map((file, i) => renameOrderImage(form.orderNumber, i + 1, file))
-    const payload = { ...form, images: renamedImages }
-    // TODO: API submit with payload (files named ORDER1234_Image1.jpg etc.)
-    console.log('Submit', payload)
+
+    const formData = new FormData()
+    formData.append('orderNumber', form.orderNumber)
+    formData.append('creatorName', form.creatorName)
+    formData.append('quantityOrdered', form.quantityOrdered)
+    formData.append('submittedUrl', form.submittedUrl)
+    formData.append('orderConfirmationLink', form.orderConfirmationLink)
+    formData.append('message', form.message)
+    renamedImages.forEach((file, i) => formData.append(`image${i + 1}`, file))
+
+    formData.append('submittedQr', getQrCodeImageUrl(form.submittedUrl))
+    formData.append('confirmationQr', getQrCodeImageUrl(form.orderConfirmationLink))
+
+    const apiBase = import.meta.env.VITE_API_URL ?? ''
+    const url = apiBase ? `${apiBase.replace(/\/$/, '')}/orders` : '/api/orders'
+    try {
+      const res = await fetch(url, { method: 'POST', body: formData })
+      const data = (await res.json().catch(() => ({}))) as { success?: boolean; error?: string }
+      if (!res.ok) {
+        setUploadError({ field: 'Submit', message: data.error ?? `Request failed (${res.status})` })
+        setShowValidationModal(true)
+        return
+      }
+      if (!data.success) {
+        setUploadError({ field: 'Submit', message: data.error ?? 'Submission failed' })
+        setShowValidationModal(true)
+        return
+      }
+      setUploadError(null)
+      setShowValidationModal(false)
+      setForm(ORDER_FORM_DEFAULTS)
+      setErrors({})
+      setUploadKeys({})
+    } catch (err) {
+      setUploadError({ field: 'Submit', message: err instanceof Error ? err.message : 'Network error' })
+      setShowValidationModal(true)
+    }
   }
 
   const errorList = getErrorList(errors)
@@ -165,8 +217,9 @@ export function OrderForm() {
                 label="Order Number"
                 required
                 value={form.orderNumber}
+                disabled
                 onChange={(e) => { update('orderNumber', e.target.value); setErrors((p) => ({ ...p, orderNumber: undefined })) }}
-                placeholder="#1005"
+                placeholder="Order Number"
                 error={errors.orderNumber}
               />
             </div>
@@ -175,6 +228,7 @@ export function OrderForm() {
                 label="Creator Name"
                 required
                 value={form.creatorName}
+                disabled
                 onChange={(e) => { update('creatorName', e.target.value); setErrors((p) => ({ ...p, creatorName: undefined })) }}
                 placeholder="Creator name"
                 error={errors.creatorName}
@@ -187,8 +241,9 @@ export function OrderForm() {
                 type="number"
                 min={1}
                 value={form.quantityOrdered}
+                disabled
                 onChange={(e) => { update('quantityOrdered', e.target.value); setErrors((p) => ({ ...p, quantityOrdered: undefined })) }}
-                placeholder="100"
+                placeholder="Enter quantity ordered"
                 error={errors.quantityOrdered}
               />
             </div>
@@ -199,7 +254,7 @@ export function OrderForm() {
                 type="url"
                 value={form.submittedUrl}
                 onChange={(e) => { update('submittedUrl', e.target.value); setErrors((p) => ({ ...p, submittedUrl: undefined })) }}
-                placeholder="Your answer"
+                placeholder="Your website URL"
                 error={errors.submittedUrl}
               />
             </div>
@@ -209,6 +264,7 @@ export function OrderForm() {
                 required
                 type="url"
                 value={form.orderConfirmationLink}
+                disabled
                 onChange={(e) => { update('orderConfirmationLink', e.target.value); setErrors((p) => ({ ...p, orderConfirmationLink: undefined })) }}
                 placeholder="https://..."
                 error={errors.orderConfirmationLink}
@@ -220,7 +276,7 @@ export function OrderForm() {
                 multiline
                 value={form.message}
                 onChange={(e) => update('message', e.target.value)}
-                placeholder="Your answer"
+                placeholder="Message (e.g. Honda Civic Car, etc. If nothing, leave blank)"
               />
             </div>
 

@@ -25,6 +25,8 @@ dist-ssr
 
 # docs: ignore to-do only; GETTING_STARTED.md stays tracked
 docs/to-do.md
-
+docs/todo-prio.md
+docs/appscript-doPost.gs
+docs/DEPLOYEMENT_VERCEL.md
 #env files
 .env
