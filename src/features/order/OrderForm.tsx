@@ -79,6 +79,8 @@ export function OrderForm() {
   const [uploadError, setUploadError] = useState<{ field: string; message: string } | null>(null)
   const [uploadKeys, setUploadKeys] = useState<Record<number, number>>({})
   const [form, setForm] = useState<OrderFormData>(ORDER_FORM_DEFAULTS)
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [submitResult, setSubmitResult] = useState<{ type: 'success' | 'error'; message: string } | null>(null)
 
   useEffect(() => {
     const prefill: Partial<OrderFormData> = {}
@@ -117,6 +119,7 @@ export function OrderForm() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
+    setSubmitResult(null)
     const validationErrors = await validateOrderForm(form)
     setErrors(validationErrors)
     if (Object.keys(validationErrors).length > 0) {
@@ -141,27 +144,37 @@ export function OrderForm() {
 
     const apiBase = import.meta.env.VITE_API_URL ?? ''
     const url = apiBase ? `${apiBase.replace(/\/$/, '')}/orders` : '/api/orders'
+    setIsSubmitting(true)
     try {
       const res = await fetch(url, { method: 'POST', body: formData })
       const data = (await res.json().catch(() => ({}))) as { success?: boolean; error?: string }
       if (!res.ok) {
-        setUploadError({ field: 'Submit', message: data.error ?? `Request failed (${res.status})` })
+        const msg = data.error ?? `Request failed (${res.status})`
+        setSubmitResult({ type: 'error', message: msg })
+        setUploadError({ field: 'Submit', message: msg })
         setShowValidationModal(true)
         return
       }
       if (!data.success) {
-        setUploadError({ field: 'Submit', message: data.error ?? 'Submission failed' })
+        const msg = data.error ?? 'Submission failed'
+        setSubmitResult({ type: 'error', message: msg })
+        setUploadError({ field: 'Submit', message: msg })
         setShowValidationModal(true)
         return
       }
       setUploadError(null)
       setShowValidationModal(false)
+      setSubmitResult({ type: 'success', message: 'Order submitted successfully.' })
       setForm(ORDER_FORM_DEFAULTS)
       setErrors({})
       setUploadKeys({})
     } catch (err) {
-      setUploadError({ field: 'Submit', message: err instanceof Error ? err.message : 'Network error' })
+      const msg = err instanceof Error ? err.message : 'Network error'
+      setSubmitResult({ type: 'error', message: msg })
+      setUploadError({ field: 'Submit', message: msg })
       setShowValidationModal(true)
+    } finally {
+      setIsSubmitting(false)
     }
   }
 
@@ -207,6 +220,20 @@ export function OrderForm() {
           onSubmit={handleSubmit}
           className="rounded-xl bg-white p-5 shadow-sm sm:p-6 md:p-8"
         >
+          {submitResult && (
+            <div
+              role="alert"
+              className={`mb-6 rounded-lg border px-4 py-3 ${
+                submitResult.type === 'success'
+                  ? 'border-green-200 bg-green-50 text-green-800'
+                  : 'border-red-200 bg-red-50 text-red-800'
+              }`}
+            >
+              <p className="font-medium">
+                {submitResult.type === 'success' ? 'Success' : 'Error'}: {submitResult.message}
+              </p>
+            </div>
+          )}
           <h1 className="mb-6 text-xl font-semibold text-gray-800 sm:mb-8 sm:text-2xl md:text-3xl">
             Order form {form.orderNumber}
           </h1>
@@ -335,9 +362,38 @@ export function OrderForm() {
             <div className="min-w-0 pt-6 md:col-span-2 md:pt-8">
               <button
                 type="submit"
-                className="w-full rounded-lg bg-violet-600 px-4 py-3 text-base sm:text-lg font-medium text-white shadow-sm transition hover:bg-violet-700 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:ring-offset-2 active:bg-violet-800 sm:w-auto sm:min-w-[140px] sm:px-6"
+                disabled={isSubmitting}
+                className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-violet-600 px-4 py-3 text-base sm:text-lg font-medium text-white shadow-sm transition hover:bg-violet-700 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:ring-offset-2 active:bg-violet-800 disabled:pointer-events-none disabled:opacity-70 sm:w-auto sm:min-w-[140px] sm:px-6"
               >
-                Submit
+                {isSubmitting ? (
+                  <>
+                    <svg
+                      className="h-5 w-5 animate-spin"
+                      xmlns="http://www.w3.org/2000/svg"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      aria-hidden
+                    >
+                      <circle
+                        cx="12"
+                        cy="12"
+                        r="10"
+                        stroke="currentColor"
+                        strokeWidth="4"
+                        strokeLinecap="round"
+                        className="opacity-25"
+                      />
+                      <path
+                        fill="currentColor"
+                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                        className="opacity-75"
+                      />
+                    </svg>
+                    Submitting…
+                  </>
+                ) : (
+                  'Submit'
+                )}
               </button>
             </div>
           </div>
