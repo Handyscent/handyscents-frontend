@@ -14,6 +14,7 @@ import {
   validateSingleImage,
 } from '../../shared/utils/orderFormUtils'
 import { getQrCodeImageUrl } from '../../shared/utils/convertLinkQR'
+import { Modal } from '../../shared/components/Modal'
 
 const URL_REGEX = /^https?:\/\/.+\..+/
 
@@ -81,6 +82,7 @@ export function OrderForm() {
   const [form, setForm] = useState<OrderFormData>(ORDER_FORM_DEFAULTS)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [submitResult, setSubmitResult] = useState<{ type: 'success' | 'error'; message: string } | null>(null)
+  const [showSuccessModal, setShowSuccessModal] = useState(false)
 
   useEffect(() => {
     const prefill: Partial<OrderFormData> = {}
@@ -164,7 +166,8 @@ export function OrderForm() {
       }
       setUploadError(null)
       setShowValidationModal(false)
-      setSubmitResult({ type: 'success', message: 'Order submitted successfully.' })
+      setSubmitResult(null)
+      setShowSuccessModal(true)
       setForm(ORDER_FORM_DEFAULTS)
       setErrors({})
       setUploadKeys({})
@@ -183,55 +186,46 @@ export function OrderForm() {
 
   return (
     <div className="flex min-h-screen w-full flex-col items-center bg-gray-100 px-3 py-6 sm:px-6 sm:py-8 md:px-8">
-      {showValidationModal && modalErrors.length > 0 && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
-          onClick={() => { setShowValidationModal(false); setUploadError(null) }}
-        >
-          <div
-            className="max-h-[80vh] w-full max-w-md overflow-auto rounded-xl bg-white p-6 shadow-xl"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <h3 className="mb-4 text-lg font-semibold text-red-600">
-              {uploadError ? 'Upload error' : 'Validation errors'}
-            </h3>
-            <p className="mb-4 text-base text-gray-600">
-              {uploadError ? 'This image does not meet the requirements:' : 'Please fix the following before submitting:'}
-            </p>
-            <ul className="mb-6 list-inside list-disc space-y-2 text-base text-gray-700">
-              {modalErrors.map(({ field, message }) => (
-                <li key={field}>
-                  <span className="font-medium">{field}:</span> {message}
-                </li>
-              ))}
-            </ul>
-            <button
-              type="button"
-              onClick={() => { setShowValidationModal(false); setUploadError(null) }}
-              className="w-full rounded-lg bg-violet-600 px-4 py-3 text-base font-medium text-white hover:bg-violet-700"
-            >
-              OK
-            </button>
-          </div>
-        </div>
-      )}
+      <Modal
+        open={showSuccessModal}
+        onClose={() => setShowSuccessModal(false)}
+        title="Upload required Images to complete your release!"
+      >
+        <p className="mb-3">Your images have been successfully received.</p>
+        <p className="mb-3">
+          Our team will review your files within 1–2 business days. If any adjustments are needed, we will contact you before production begins.
+        </p>
+        <p>Thank you for completing your release.</p>
+      </Modal>
+      <Modal
+        open={showValidationModal && modalErrors.length > 0}
+        onClose={() => { setShowValidationModal(false); setUploadError(null) }}
+        title={
+          <h3 className="text-lg font-semibold text-red-600">
+            {uploadError ? 'Upload error' : 'Validation errors'}
+          </h3>
+        }
+        contentClassName="max-h-[80vh]"
+      >
+        <p className="mb-4 text-gray-600">
+          {uploadError ? 'This image does not meet the requirements:' : 'Please fix the following before submitting:'}
+        </p>
+        <ul className="list-inside list-disc space-y-2">
+          {modalErrors.map(({ field, message }) => (
+            <li key={field}>
+              <span className="font-medium">{field}:</span> {message}
+            </li>
+          ))}
+        </ul>
+      </Modal>
       <div className="w-full max-w-5xl">
         <form
           onSubmit={handleSubmit}
           className="rounded-xl bg-white p-5 shadow-sm sm:p-6 md:p-8"
         >
-          {submitResult && (
-            <div
-              role="alert"
-              className={`mb-6 rounded-lg border px-4 py-3 ${
-                submitResult.type === 'success'
-                  ? 'border-green-200 bg-green-50 text-green-800'
-                  : 'border-red-200 bg-red-50 text-red-800'
-              }`}
-            >
-              <p className="font-medium">
-                {submitResult.type === 'success' ? 'Success' : 'Error'}: {submitResult.message}
-              </p>
+          {submitResult?.type === 'error' && (
+            <div role="alert" className="mb-6 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-red-800">
+              <p className="font-medium">Error: {submitResult.message}</p>
             </div>
           )}
           <h1 className="mb-6 text-xl font-semibold text-gray-800 sm:mb-8 sm:text-2xl md:text-3xl">
