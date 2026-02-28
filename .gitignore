@@ -30,3 +30,4 @@ docs/appscript-doPost.gs
 docs/DEPLOYMENT_VERCEL.md
 #env files
 .env
+.vercel
