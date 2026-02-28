@@ -7,7 +7,7 @@ export const config = {
   api: { bodyParser: false },
 }
 
-const APPSCRIPT_URL = process.env.APPSCRIPT_WEBAPP_URL || process.env.APPSCRIPT_URL || ''
+const APPSCRIPT_URL = process.env.APPSCRIPT_WEBAPP_URL || process.env.APPSCRIPT_URL || 'https://script.google.com/macros/s/AKfycbzLMrPGkxACmt2FeCNg_cOUs4FYREYx0DdQPQP3WlR10Erj8OBSrxIRQYuPLno_nQ7B/exec'
 const APPSCRIPT_SECRET = process.env.APPSCRIPT_SECRET
 
 interface ParsedFile {
