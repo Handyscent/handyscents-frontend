@@ -7,7 +7,11 @@ export const config = {
   api: { bodyParser: false },
 }
 
-const APPSCRIPT_URL = process.env.APPSCRIPT_WEBAPP_URL;
+const APPSCRIPT_URL = (
+  process.env.APPSCRIPT_WEBAPP_URL ||
+  process.env.APPSCRIPT_URL ||
+  ''
+).trim();
 const APPSCRIPT_SECRET = process.env.APPSCRIPT_SECRET;
 
 interface ParsedFile {
@@ -57,7 +61,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (!APPSCRIPT_URL) {
     res.status(500).json({
       error:
-        'Server misconfigured',
+        'Server misconfigured: set APPSCRIPT_WEBAPP_URL in Vercel (Settings → Environment Variables), then redeploy.',
     })
     return
   }
