@@ -22,7 +22,8 @@ export function Input({
   const borderClass = error ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : 'border-gray-200 focus:border-violet-500 focus:ring-violet-500'
 
   if (multiline) {
-    const { type: _t, ...textareaProps } = props as InputHTMLAttributes<HTMLInputElement>
+    const textareaProps = { ...(props as InputHTMLAttributes<HTMLInputElement>) }
+    delete textareaProps.type
     return (
       <div className="w-full">
         <label htmlFor={inputId} className="mb-1 block text-base font-medium text-gray-700">

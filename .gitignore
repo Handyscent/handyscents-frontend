@@ -23,11 +23,10 @@ dist-ssr
 *.sln
 *.sw?
 
-# docs: ignore to-do only; GETTING_STARTED.md stays tracked
+# docs: ignore to-do only
 docs/to-do.md
 docs/todo-prio.md
 docs/appscript-doPost.gs
-docs/DEPLOYMENT_VERCEL.md
 #env files
 .env
-.vercel
+api/config.php
