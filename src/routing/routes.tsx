@@ -1,6 +1,5 @@
-import { NavLink, Outlet, Routes, Route } from 'react-router-dom'
+import { Navigate, NavLink, Outlet, Routes, Route } from 'react-router-dom'
 import { OrderForm } from '../features/order/OrderForm'
-import { ResubmissionForm } from '../features/order/ResubmissionForm'
 
 const navClass = ({ isActive }: { isActive: boolean }) =>
   `rounded-lg px-4 py-2 text-base font-medium ${
@@ -30,8 +29,8 @@ export function AppRoutes() {
     <Routes>
       <Route path="/" element={<AppLayout />}>
         <Route index element={<OrderForm />} />
-        <Route path="resubmit" element={<ResubmissionForm />} />
       </Route>
+      <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   )
 }

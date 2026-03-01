@@ -144,8 +144,8 @@ export function OrderForm() {
     formData.append('submittedQr', getQrCodeImageUrl(form.submittedUrl))
     formData.append('confirmationQr', getQrCodeImageUrl(form.orderConfirmationLink))
 
-    const apiBase = import.meta.env.VITE_API_URL ?? ''
-    const url = apiBase ? `${apiBase.replace(/\/$/, '')}/orders` : '/api/orders'
+    const apiUrl = (import.meta.env.VITE_API_URL ?? '').trim()
+    const url = apiUrl || '/api/orders.php'
     setIsSubmitting(true)
     try {
       const res = await fetch(url, { method: 'POST', body: formData })
