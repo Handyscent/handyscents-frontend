@@ -139,8 +139,6 @@ export function OrderForm() {
     formData.append('submittedUrl', form.submittedUrl)
     formData.append('orderConfirmationLink', form.orderConfirmationLink)
     formData.append('message', form.message)
-    renamedImages.forEach((file, i) => formData.append(`image${i + 1}`, file))
-
     formData.append('submittedQr', getQrCodeImageUrl(form.submittedUrl))
     formData.append('confirmationQr', getQrCodeImageUrl(form.orderConfirmationLink))
 
@@ -164,6 +162,24 @@ export function OrderForm() {
         setShowValidationModal(true)
         return
       }
+
+      for (let i = 0; i < renamedImages.length; i++) {
+        const imageForm = new FormData()
+        imageForm.append('action', 'uploadImage')
+        imageForm.append('orderId', form.orderNumber)
+        imageForm.append('imageIndex', String(i + 1))
+        imageForm.append('image', renamedImages[i])
+        const imageRes = await fetch(url, { method: 'POST', body: imageForm })
+        const imageData = (await imageRes.json().catch(() => ({}))) as { success?: boolean; error?: string }
+        if (!imageRes.ok || !imageData.success) {
+          const msg = imageData.error ?? `Image ${i + 1} upload failed`
+          setSubmitResult({ type: 'error', message: msg })
+          setUploadError({ field: `Image ${i + 1}`, message: msg })
+          setShowValidationModal(true)
+          return
+        }
+      }
+
       setUploadError(null)
       setShowValidationModal(false)
       setSubmitResult(null)

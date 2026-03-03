@@ -64,6 +64,50 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   try {
     const { fields, files } = await parseForm(req)
+    const action = fields.action ?? ''
+
+    if (action === 'uploadImage') {
+      const orderId = (fields.orderId ?? '').replace(/^#/, '').replace(/\s/g, '')
+      const imageIndex = Number(fields.imageIndex ?? '')
+      const imageFile = files.image
+      if (!orderId || !Number.isInteger(imageIndex) || imageIndex < 1 || imageIndex > 5 || !imageFile?.path) {
+        res.status(400).json({ error: 'uploadImage requires orderId, imageIndex (1-5), and image file' })
+        return
+      }
+
+      const imgPayload: Record<string, string | number> = {
+        action: 'uploadImage',
+        orderId,
+        imageIndex,
+        base64: fileToBase64(imageFile.path),
+        fileName: imageFile.name || `ORDER${orderId}_Image${imageIndex}.jpg`,
+      }
+      if (APPSCRIPT_SECRET) imgPayload.secret = APPSCRIPT_SECRET
+
+      const imgRes = await fetch(APPSCRIPT_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(imgPayload),
+      })
+
+      const text = await imgRes.text()
+      let data: { success?: boolean; error?: string }
+      try {
+        data = JSON.parse(text)
+      } catch {
+        data = { error: text || 'Apps Script returned non-JSON' }
+      }
+      if (!imgRes.ok) {
+        res.status(imgRes.status).json(data)
+        return
+      }
+      if (!data.success) {
+        res.status(502).json(data)
+        return
+      }
+      res.status(200).json({ success: true })
+      return
+    }
 
     const orderNumber = fields.orderNumber ?? ''
     const creatorName = fields.creatorName ?? ''
@@ -74,7 +118,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const submittedQrUrl = fields.submittedQr ?? ''
     const confirmationQrUrl = fields.confirmationQr ?? ''
 
-    const orderId = (orderNumber || '').replace(/^#/, '').replace(/\s/g, '') || 'ORDER'
     const orderPayload: Record<string, string> = {
       orderNumber,
       creatorName,
@@ -108,28 +151,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (!data.success) {
       res.status(502).json(data)
       return
-    }
-
-    for (let i = 1; i <= 5; i++) {
-      const f = files[`image${i}`]
-      if (!f?.path) continue
-      const imgPayload: Record<string, string | number> = {
-        action: 'uploadImage',
-        orderId,
-        imageIndex: i,
-        base64: fileToBase64(f.path),
-        fileName: f.name,
-      }
-      if (APPSCRIPT_SECRET) imgPayload.secret = APPSCRIPT_SECRET
-      const imgRes = await fetch(APPSCRIPT_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(imgPayload),
-      })
-      const imgData = await imgRes.text()
-      let imgJson: { success?: boolean } = {}
-      try { imgJson = JSON.parse(imgData || '{}') } catch { /* ignore */ }
-      if (!imgRes.ok || !imgJson.success) console.error(`Image ${i} upload failed:`, imgData)
     }
 
     res.status(200).json({ success: true })

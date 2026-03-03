@@ -20,7 +20,7 @@ export const ORDER_FORM_DEFAULTS: OrderFormData = {
   images: [null, null, null, null, null],
 }
 
-export const MAX_IMAGE_SIZE_MB = 100
+export const MAX_IMAGE_SIZE_MB = 4
 export const ACCEPTED_FILE_TYPES = 'image/jpeg,image/png'
 
 /** 2.5" x 3" at 300 DPI */
