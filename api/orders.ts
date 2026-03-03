@@ -74,7 +74,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const submittedQrUrl = fields.submittedQr ?? ''
     const confirmationQrUrl = fields.confirmationQr ?? ''
 
-    const payload: Record<string, string> = {
+    const orderId = (orderNumber || '').replace(/^#/, '').replace(/\s/g, '') || 'ORDER'
+    const orderPayload: Record<string, string> = {
       orderNumber,
       creatorName,
       quantityOrdered,
@@ -84,25 +85,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       submittedQrUrl,
       confirmationQrUrl,
     }
-    if (APPSCRIPT_SECRET) payload.secret = APPSCRIPT_SECRET
-
-    for (let i = 1; i <= 5; i++) {
-      const key = `image${i}`
-      const f = files[key]
-      if (f?.path) {
-        payload[`image${i}Base64`] = fileToBase64(f.path)
-        payload[`image${i}Name`] = f.name
-      }
-    }
+    if (APPSCRIPT_SECRET) orderPayload.secret = APPSCRIPT_SECRET
 
     const appRes = await fetch(APPSCRIPT_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
+      body: JSON.stringify(orderPayload),
     })
 
-    const text = await appRes.text()
-    let data: { success?: boolean; error?: string }
+    let text = await appRes.text()
+    let data: { success?: boolean; error?: string; duplicate?: boolean }
     try {
       data = JSON.parse(text)
     } catch {
@@ -117,6 +109,29 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       res.status(502).json(data)
       return
     }
+
+    for (let i = 1; i <= 5; i++) {
+      const f = files[`image${i}`]
+      if (!f?.path) continue
+      const imgPayload: Record<string, string | number> = {
+        action: 'uploadImage',
+        orderId,
+        imageIndex: i,
+        base64: fileToBase64(f.path),
+        fileName: f.name,
+      }
+      if (APPSCRIPT_SECRET) imgPayload.secret = APPSCRIPT_SECRET
+      const imgRes = await fetch(APPSCRIPT_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(imgPayload),
+      })
+      const imgData = await imgRes.text()
+      let imgJson: { success?: boolean } = {}
+      try { imgJson = JSON.parse(imgData || '{}') } catch { /* ignore */ }
+      if (!imgRes.ok || !imgJson.success) console.error(`Image ${i} upload failed:`, imgData)
+    }
+
     res.status(200).json({ success: true })
   } catch (err) {
     console.error('orders API error:', err)

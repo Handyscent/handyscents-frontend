@@ -28,6 +28,7 @@ docs/to-do.md
 docs/todo-prio.md
 docs/appscript-doPost.gs
 docs/DEPLOYMENT_VERCEL.md
+docs/Appscript-revise.js
 #env files
 .env
 .vercel
