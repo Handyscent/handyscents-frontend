@@ -130,7 +130,7 @@ export function ResubmissionForm() {
           className="rounded-xl bg-white p-5 shadow-sm sm:p-6 md:p-8"
         >
           <h1 className="mb-6 text-xl font-semibold text-gray-800 sm:mb-8 sm:text-2xl md:text-3xl">
-            Resubmission form
+          File Resubmission
           </h1>
           <p className="mb-6 text-base text-gray-600">
             Resubmit images for an existing order. Enter the order ID and upload 5 images (same requirements as the main order form).

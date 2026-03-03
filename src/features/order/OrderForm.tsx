@@ -245,7 +245,7 @@ export function OrderForm() {
             </div>
           )}
           <h1 className="mb-6 text-xl font-semibold text-gray-800 sm:mb-8 sm:text-2xl md:text-3xl">
-            Order form {form.orderNumber}
+          Order File Submission {form.orderNumber}
           </h1>
 
           <div className="grid grid-cols-1 gap-5 sm:gap-6 md:grid-cols-2 md:gap-x-6 md:gap-y-6">
