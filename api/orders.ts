@@ -78,6 +78,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       const imgPayload: Record<string, string | number> = {
         action: 'uploadImage',
         orderId,
+        orderNumber: orderId,
         imageIndex,
         base64: fileToBase64(imageFile.path),
         fileName: imageFile.name || `ORDER${orderId}_Image${imageIndex}.jpg`,
