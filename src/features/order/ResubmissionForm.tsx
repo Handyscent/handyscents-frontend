@@ -4,9 +4,7 @@ import { FileUpload } from '../../components/ui/FileUpload'
 import type { ResubmissionFormData, ResubmissionFormErrors } from '../../models/order.types'
 import { getImageDimensions, isValidDimensions, renameOrderImage, validateSingleImage } from '../../shared/utils/orderFormUtils'
 import { MAX_IMAGE_SIZE_MB } from '../../models/order.types'
-import { Modal } from '../../shared/components/Modal'
 
-const ORDERS_API_URL = '/api/orders/'
 const INITIAL_FORM: ResubmissionFormData = {
   orderId: '',
   images: [null, null, null, null, null],
@@ -56,9 +54,6 @@ export function ResubmissionForm() {
   const [uploadError, setUploadError] = useState<{ field: string; message: string } | null>(null)
   const [uploadKeys, setUploadKeys] = useState<Record<number, number>>({})
   const [form, setForm] = useState<ResubmissionFormData>(INITIAL_FORM)
-  const [isSubmitting, setIsSubmitting] = useState(false)
-  const [showSuccessModal, setShowSuccessModal] = useState(false)
-  const [submitError, setSubmitError] = useState<string | null>(null)
 
   const setImage = (index: number, file: File | null) => {
     setForm((prev) => {
@@ -70,7 +65,6 @@ export function ResubmissionForm() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    setSubmitError(null)
     const validationErrors = await validateResubmissionForm(form)
     setErrors(validationErrors)
     if (Object.keys(validationErrors).length > 0) {
@@ -80,63 +74,22 @@ export function ResubmissionForm() {
     const renamedImages = form.images
       .filter((f): f is File => f != null)
       .map((file, i) => renameOrderImage(form.orderId, i + 1, file))
-    const orderId = form.orderId.trim().replace(/^#/, '').replace(/\s/g, '')
-    setIsSubmitting(true)
-    try {
-      const imageResults = await Promise.all(
-        renamedImages.map(async (file, i) => {
-          const imageForm = new FormData()
-          imageForm.append('action', 'uploadImage')
-          imageForm.append('orderId', orderId)
-          imageForm.append('imageIndex', String(i + 1))
-          imageForm.append('image', file)
-          const res = await fetch(ORDERS_API_URL, { method: 'POST', body: imageForm })
-          const data = (await res.json().catch(() => ({}))) as { success?: boolean; error?: string }
-          return { index: i + 1, ok: res.ok, success: data.success, error: data.error }
-        })
-      )
-      const failed = imageResults.find((r) => !r.ok || !r.success)
-      if (failed) {
-        setSubmitError(failed.error ?? `Image ${failed.index} upload failed`)
-        setShowValidationModal(true)
-        return
-      }
-      setShowSuccessModal(true)
-      setForm(INITIAL_FORM)
-      setErrors({})
-      setUploadKeys({})
-    } catch (err) {
-      setSubmitError(err instanceof Error ? err.message : 'Network error')
-      setShowValidationModal(true)
-    } finally {
-      setIsSubmitting(false)
-    }
+    const payload = { orderId: form.orderId.trim(), images: renamedImages }
+    // TODO: API submit resubmission (files named ORDER1234_Image1.jpg etc.)
+    console.log('Resubmit', payload)
   }
 
   const errorList = getErrorList(errors)
-  const modalErrors = uploadError
-    ? [uploadError]
-    : submitError
-      ? [{ field: 'Submit', message: submitError }]
-      : errorList
+  const modalErrors = uploadError ? [uploadError] : errorList
 
   return (
     <div className="flex min-h-screen w-full flex-col items-center bg-gray-100 px-3 py-6 sm:px-6 sm:py-8 md:px-8">
-      <Modal
-        open={showSuccessModal}
-        onClose={() => setShowSuccessModal(false)}
-        title="Resubmission received"
-      >
-        <p className="mb-3">Your images have been successfully received.</p>
-        <p>Our team will review your files within 1–2 business days.</p>
-      </Modal>
       {showValidationModal && modalErrors.length > 0 && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
           onClick={() => {
             setShowValidationModal(false)
             setUploadError(null)
-            setSubmitError(null)
           }}
         >
           <div
@@ -163,7 +116,6 @@ export function ResubmissionForm() {
               onClick={() => {
                 setShowValidationModal(false)
                 setUploadError(null)
-                setSubmitError(null)
               }}
               className="w-full rounded-lg bg-violet-600 px-4 py-3 text-base font-medium text-white hover:bg-violet-700"
             >
@@ -173,15 +125,10 @@ export function ResubmissionForm() {
         </div>
       )}
       <div className="w-full max-w-5xl">
-          <form
+        <form
           onSubmit={handleSubmit}
           className="rounded-xl bg-white p-5 shadow-sm sm:p-6 md:p-8"
         >
-          {submitError && (
-            <div role="alert" className="mb-6 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-red-800">
-              <p className="font-medium">Error: {submitError}</p>
-            </div>
-          )}
           <h1 className="mb-6 text-xl font-semibold text-gray-800 sm:mb-8 sm:text-2xl md:text-3xl">
           File Resubmission
           </h1>
@@ -262,10 +209,9 @@ export function ResubmissionForm() {
             <div className="min-w-0 pt-6 md:col-span-2 md:pt-8">
               <button
                 type="submit"
-                disabled={isSubmitting}
-                className="w-full rounded-lg bg-violet-600 px-4 py-3 text-base sm:text-lg font-medium text-white shadow-sm transition hover:bg-violet-700 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:ring-offset-2 active:bg-violet-800 disabled:pointer-events-none disabled:opacity-70 sm:w-auto sm:min-w-[140px] sm:px-6"
+                className="w-full rounded-lg bg-violet-600 px-4 py-3 text-base sm:text-lg font-medium text-white shadow-sm transition hover:bg-violet-700 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:ring-offset-2 active:bg-violet-800 sm:w-auto sm:min-w-[140px] sm:px-6"
               >
-                {isSubmitting ? 'Submitting…' : 'Submit resubmission'}
+                Submit resubmission
               </button>
             </div>
           </div>

@@ -17,7 +17,6 @@ import { getQrCodeImageUrl } from '../../shared/utils/convertLinkQR'
 import { Modal } from '../../shared/components/Modal'
 
 const URL_REGEX = /^https?:\/\/.+\..+/
-const ORDERS_API_URL = '/api/orders/'
 
 async function validateOrderForm(form: OrderFormData): Promise<OrderFormErrors> {
   const errors: OrderFormErrors = {}
@@ -143,9 +142,11 @@ export function OrderForm() {
     formData.append('submittedQr', getQrCodeImageUrl(form.submittedUrl))
     formData.append('confirmationQr', getQrCodeImageUrl(form.orderConfirmationLink))
 
+    const apiBase = import.meta.env.VITE_API_URL ?? ''
+    const url = apiBase ? `${apiBase.replace(/\/$/, '')}/orders` : '/api/orders'
     setIsSubmitting(true)
     try {
-      const res = await fetch(ORDERS_API_URL, { method: 'POST', body: formData })
+      const res = await fetch(url, { method: 'POST', body: formData })
       const data = (await res.json().catch(() => ({}))) as { success?: boolean; error?: string }
       if (!res.ok) {
         const msg = data.error ?? `Request failed (${res.status})`
@@ -162,25 +163,21 @@ export function OrderForm() {
         return
       }
 
-      const imageResults = await Promise.all(
-        renamedImages.map(async (file, i) => {
-          const imageForm = new FormData()
-          imageForm.append('action', 'uploadImage')
-          imageForm.append('orderId', form.orderNumber)
-          imageForm.append('imageIndex', String(i + 1))
-          imageForm.append('image', file)
-          const imageRes = await fetch(ORDERS_API_URL, { method: 'POST', body: imageForm })
-          const imageData = (await imageRes.json().catch(() => ({}))) as { success?: boolean; error?: string }
-          return { index: i + 1, ok: imageRes.ok, success: imageData.success, error: imageData.error }
-        })
-      )
-      const failed = imageResults.find((r) => !r.ok || !r.success)
-      if (failed) {
-        const msg = failed.error ?? `Image ${failed.index} upload failed`
-        setSubmitResult({ type: 'error', message: msg })
-        setUploadError({ field: `Image ${failed.index}`, message: msg })
-        setShowValidationModal(true)
-        return
+      for (let i = 0; i < renamedImages.length; i++) {
+        const imageForm = new FormData()
+        imageForm.append('action', 'uploadImage')
+        imageForm.append('orderId', form.orderNumber)
+        imageForm.append('imageIndex', String(i + 1))
+        imageForm.append('image', renamedImages[i])
+        const imageRes = await fetch(url, { method: 'POST', body: imageForm })
+        const imageData = (await imageRes.json().catch(() => ({}))) as { success?: boolean; error?: string }
+        if (!imageRes.ok || !imageData.success) {
+          const msg = imageData.error ?? `Image ${i + 1} upload failed`
+          setSubmitResult({ type: 'error', message: msg })
+          setUploadError({ field: `Image ${i + 1}`, message: msg })
+          setShowValidationModal(true)
+          return
+        }
       }
 
       setUploadError(null)
