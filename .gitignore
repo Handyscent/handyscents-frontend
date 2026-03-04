@@ -32,3 +32,6 @@ docs/Appscript-revise.js
 #env files
 .env
 .vercel
+
+# cPanel PHP API config (server-specific; use config.example.php as template)
+public/api/orders/config.php

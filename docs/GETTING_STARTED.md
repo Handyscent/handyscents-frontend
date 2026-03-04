@@ -38,13 +38,14 @@ App runs at **http://localhost:5173**
 | `npm run preview` | Preview production build locally |
 | `npm run lint` | Run ESLint |
 
-## Order submission (serverless)
+## Order submission
 
-Order form submits to `/api/orders` (Vercel serverless) which forwards to Google Apps Script. For production:
+Order form submits to **`/api/orders`**, which forwards to Google Apps Script.
 
-1. Deploy to Vercel and set env vars: `APPSCRIPT_WEBAPP_URL`, `APPSCRIPT_SECRET` (optional).
-2. Copy [docs/appscript-doPost.gs](docs/appscript-doPost.gs) into your Apps Script project, set `PARENT_FOLDER_ID` and `APPSCRIPT_SECRET` in Script Properties, and deploy as Web app.
-3. Local dev: run `vercel dev` so `/api/orders` works; or test against a deployed URL via `VITE_API_URL`.
+- **Production (cPanel):** Deploy to cPanel root per [docs/CPANEL_DEPLOYMENT.md](CPANEL_DEPLOYMENT.md). Configure `api/orders/config.php` (or env vars) with `APPSCRIPT_WEBAPP_URL` and optional `APPSCRIPT_SECRET`.
+- **Legacy (Vercel):** Deploy to Vercel and set env vars `APPSCRIPT_WEBAPP_URL`, `APPSCRIPT_SECRET`; run `vercel dev` for local API. `vercel.json` is only used for Vercel deployments.
+- **Apps Script:** Copy [docs/appscript-doPost.gs](appscript-doPost.gs) into your Apps Script project, set `PARENT_FOLDER_ID` and `APPSCRIPT_SECRET` in Script Properties, and deploy as Web app.
+- **Local dev:** Use `VITE_API_URL` to point at a deployed API, or run `vercel dev` for same-origin `/api/orders`.
 
 ## Branch Workflow
 
